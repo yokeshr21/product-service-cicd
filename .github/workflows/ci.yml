@@ -36,3 +36,6 @@ jobs:
           -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
           -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t product-service-cicd:${{ github.sha }} .
