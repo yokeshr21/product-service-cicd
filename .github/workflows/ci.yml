@@ -29,7 +29,7 @@ jobs:
       - name: Build and test
         run: ./mvnw clean verify
 
-      - name: SonarQube analysis
+      - name: SonarCloud analysis
         run: >
           ./mvnw sonar:sonar
           -Dsonar.host.url=https://sonarcloud.io
