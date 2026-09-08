@@ -119,7 +119,7 @@ jobs:
             -p 8080:8080 \
             "$IMAGE"
           
-          curl --fail --retry 10 --retry-delay 3 \
+          curl --fail --retry 10 --retry-delay 3 --retry-all-errors \
             http://localhost:8080/products/1
 
           EOF
