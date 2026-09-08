@@ -71,3 +71,57 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            
+            
+  deploy:
+    name: Deploy to EC2
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    needs: build-and-test
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Deploy to EC2
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          IMAGE: ghcr.io/yokeshr21/product-service-cicd:${{ github.sha }}
+
+        run: |
+          install -m 600 /dev/null deploy_key
+          printf '%s\n' "$DEPLOY_KEY" > deploy_key
+
+          trap 'rm -f deploy_key' EXIT
+
+          ssh -i deploy_key \
+            -o StrictHostKeyChecking=no \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s" <<EOF
+
+          set -e
+
+          docker pull "$IMAGE"
+
+          docker stop product-service || true
+
+          docker rm product-service || true
+
+          docker run -d \
+            --restart unless-stopped \
+            --name product-service \
+            -p 8080:8080 \
+            "$IMAGE"
+
+          EOF
+
+      - name: Verify deployment
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+        run: |
+          curl --fail --retry 10 --retry-delay 3 \
+            "http://${DEPLOY_HOST}:8080/products/1"
